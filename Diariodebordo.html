@@ -4,442 +4,235 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Diário de Bordo</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
-<!-- SheetJS for real Excel export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-  :root {
-    --bg: #0f1117;
-    --surface: #181c26;
-    --surface2: #1e2433;
-    --border: #2a3045;
-    --accent: #f0a500;
-    --accent2: #e05c2a;
-    --text: #e8eaf0;
-    --text-muted: #6b7592;
-    --green: #2ecc71;
-    --red: #e74c3c;
-    --blue: #4a9eff;
-    --row-hover: #1a2035;
-  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'IBM Plex Sans', sans-serif;
-    min-height: 100vh;
-    padding: 24px 16px;
+    background: #f4f4f4;
+    color: #222;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    padding: 20px;
   }
 
-  /* ── Header ── */
-  .header {
-    display: flex;
-    align-items: flex-end;
-    gap: 16px;
-    margin-bottom: 28px;
-    border-bottom: 2px solid var(--accent);
-    padding-bottom: 16px;
-  }
-  .header-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: clamp(32px, 6vw, 56px);
-    letter-spacing: 4px;
-    color: var(--accent);
-    line-height: 1;
-  }
-  .header-sub {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 2px;
-    text-transform: uppercase;
+  h1 {
+    font-size: 20px;
+    font-weight: bold;
     margin-bottom: 4px;
   }
-  .live-clock { margin-left: auto; text-align: right; }
-  .clock-time {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: clamp(20px, 4vw, 32px);
-    font-weight: 600;
-    color: var(--accent);
-    letter-spacing: 2px;
-  }
-  .clock-date {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 1px;
+
+  .subtitle {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 16px;
   }
 
-  /* ── Controls ── */
+  .clock {
+    font-size: 13px;
+    color: #444;
+    margin-bottom: 16px;
+  }
+
+  /* Botões */
   .controls {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
     flex-wrap: wrap;
+    margin-bottom: 16px;
     align-items: center;
   }
-  .btn {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 9px 16px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    border-radius: 3px;
-    white-space: nowrap;
-  }
-  .btn-primary { background: var(--accent); color: #000; }
-  .btn-primary:hover { background: #ffc23a; transform: translateY(-1px); }
-  .btn-excel { background: #1d6f42; color: #fff; border: 1px solid #1d6f42; }
-  .btn-excel:hover { background: #25a05d; transform: translateY(-1px); }
-  .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
-  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-danger { background: transparent; color: var(--red); border: 1px solid var(--red); }
-  .btn-danger:hover { background: var(--red); color: #fff; }
-  .btn-icon { padding: 7px 10px; font-size: 14px; }
-  .counter {
-    margin-left: auto;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--text-muted);
-    letter-spacing: 1px;
-  }
-  .counter span { color: var(--accent); font-weight: 600; }
 
-  /* ── Export dropdown ── */
-  .export-group { position: relative; display: inline-flex; gap: 0; }
-  .export-main { border-radius: 3px 0 0 3px; }
-  .export-arrow {
-    background: #1d6f42;
-    color: #fff;
-    border: none;
-    border-left: 1px solid rgba(255,255,255,0.2);
-    border-radius: 0 3px 3px 0;
-    padding: 9px 10px;
-    cursor: pointer;
-    font-size: 10px;
-    transition: background 0.15s;
-  }
-  .export-arrow:hover { background: #25a05d; }
-  .export-dropdown {
-    display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    min-width: 180px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    z-index: 50;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    overflow: hidden;
-  }
-  .export-dropdown.open { display: block; }
-  .export-dropdown button {
-    display: block;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: none;
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    padding: 11px 16px;
-    cursor: pointer;
-    transition: background 0.12s;
-    letter-spacing: 1px;
-  }
-  .export-dropdown button:hover { background: var(--row-hover); color: var(--accent); }
-
-  /* ── Table ── */
-  .table-wrapper {
-    overflow-x: auto;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-  }
-  table { width: 100%; border-collapse: collapse; min-width: 820px; }
-  thead tr { background: var(--surface2); border-bottom: 2px solid var(--accent); }
-  th {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--accent);
-    padding: 13px 12px;
-    text-align: left;
-    white-space: nowrap;
-  }
-  th.actions-col { text-align: center; }
-  tbody tr {
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s ease;
-  }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--row-hover); }
-  td {
-    padding: 0;
-    vertical-align: middle;
-    font-family: 'IBM Plex Mono', monospace;
+  button {
+    font-family: Arial, sans-serif;
     font-size: 13px;
-  }
-  td.cell-num {
-    color: var(--text-muted);
-    font-size: 11px;
-    padding: 12px 12px;
-    text-align: center;
-    width: 36px;
-  }
-  td.cell-data { color: var(--accent); font-weight: 600; padding: 12px 12px; white-space: nowrap; }
-  td.cell-hora { color: var(--accent); font-weight: 600; padding: 12px 12px; white-space: nowrap; }
-  td.cell-retorno { padding: 12px 12px; white-space: nowrap; }
-  td.cell-motorista { padding: 12px 12px; }
-  td.cell-placa { padding: 12px 12px; font-weight: 600; white-space: nowrap; }
-  td.cell-destino { padding: 12px 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  td.cell-status { padding: 8px 12px; text-align: center; white-space: nowrap; }
-  td.cell-actions { padding: 6px 10px; text-align: center; white-space: nowrap; width: 80px; }
-
-  .status-badge {
-    display: inline-block;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 1px;
-    padding: 3px 8px;
-    border-radius: 2px;
-    text-transform: uppercase;
-  }
-  .status-saida { background: rgba(224,92,42,0.2); color: var(--accent2); border: 1px solid var(--accent2); }
-  .status-retorno { background: rgba(46,204,113,0.15); color: var(--green); border: 1px solid var(--green); }
-
-  .action-btn {
-    background: none;
-    border: 1px solid transparent;
+    padding: 7px 14px;
     cursor: pointer;
-    padding: 5px 7px;
     border-radius: 3px;
-    font-size: 14px;
-    transition: all 0.15s;
-    line-height: 1;
+    border: 1px solid #999;
+    background: #fff;
+    color: #222;
   }
-  .action-btn.edit { color: var(--blue); }
-  .action-btn.edit:hover { background: rgba(74,158,255,0.15); border-color: var(--blue); }
-  .action-btn.del { color: var(--text-muted); }
-  .action-btn.del:hover { color: var(--red); background: rgba(231,76,60,0.12); border-color: var(--red); }
+  button:hover { background: #e8e8e8; }
 
-  .empty-state {
-    text-align: center;
-    padding: 48px 24px;
-    color: var(--text-muted);
+  .btn-blue  { background: #1a56db; color: #fff; border-color: #1a56db; }
+  .btn-blue:hover  { background: #1446b8; }
+  .btn-green { background: #1d7a3a; color: #fff; border-color: #1d7a3a; }
+  .btn-green:hover { background: #155c2b; }
+  .btn-red   { background: #fff; color: #c0392b; border-color: #c0392b; }
+  .btn-red:hover   { background: #fdecea; }
+
+  .counter { margin-left: auto; font-size: 13px; color: #555; }
+
+  /* Tabela */
+  .table-wrap { overflow-x: auto; background: #fff; border: 1px solid #ccc; border-radius: 3px; }
+
+  table { width: 100%; border-collapse: collapse; min-width: 750px; }
+
+  thead { background: #222; color: #fff; }
+  th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: bold; white-space: nowrap; }
+  th.center { text-align: center; }
+
+  tbody tr { border-bottom: 1px solid #ddd; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:nth-child(even) { background: #f9f9f9; }
+  tbody tr:hover { background: #eef4ff; }
+
+  td { padding: 9px 12px; font-size: 13px; vertical-align: middle; }
+  td.center { text-align: center; }
+  td.muted { color: #999; }
+  td.bold { font-weight: bold; }
+  td.green { color: #1d7a3a; font-weight: bold; }
+  td.orange { color: #b85c00; font-weight: bold; }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 2px;
   }
-  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-state p { font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: 1px; }
+  .tag-viagem  { background: #fff3cd; color: #7d5a00; border: 1px solid #e6c44a; }
+  .tag-retorno { background: #d4edda; color: #155724; border: 1px solid #5cb85c; }
 
-  /* ── Modal ── */
-  .modal-overlay {
+  .act-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    color: #555;
+  }
+  .act-btn:hover { background: #eee; }
+
+  .empty { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+
+  /* Modal */
+  .overlay {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.75);
+    background: rgba(0,0,0,0.45);
     z-index: 100;
     align-items: center;
     justify-content: center;
     padding: 16px;
   }
-  .modal-overlay.open { display: flex; }
+  .overlay.open { display: flex; }
+
   .modal {
-    background: var(--surface);
-    border: 1px solid var(--accent);
-    border-radius: 6px;
-    padding: 28px;
+    background: #fff;
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    padding: 24px;
     width: 100%;
-    max-width: 480px;
-    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
-    animation: slideUp 0.2s ease;
+    max-width: 420px;
     max-height: 90vh;
     overflow-y: auto;
   }
-  @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-  .modal-title {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 26px;
-    letter-spacing: 3px;
-    color: var(--accent);
-    margin-bottom: 4px;
-  }
-  .modal-subtitle {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-    letter-spacing: 1px;
-    margin-bottom: 22px;
-  }
-  .form-group { margin-bottom: 14px; }
-  .form-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    display: block;
-    margin-bottom: 6px;
-  }
-  .form-label .auto-tag { color: var(--accent); margin-left: 6px; }
-  .form-input, .form-select {
+
+  .modal h2 { font-size: 16px; margin-bottom: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444; }
+  .field input, .field select {
     width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
+    padding: 8px 10px;
+    border: 1px solid #bbb;
     border-radius: 3px;
-    color: var(--text);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 14px;
-    padding: 10px 12px;
-    outline: none;
-    transition: border-color 0.15s;
-    appearance: none;
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    background: #fff;
   }
-  .form-input:focus, .form-select:focus { border-color: var(--accent); }
-  .form-input.auto-value { color: var(--accent); font-weight: 600; background: rgba(240,165,0,0.06); border-color: rgba(240,165,0,0.3); }
-  .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7592' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
-  .form-select option { background: #1e2433; color: var(--text); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .return-section { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
-  .return-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px; font-weight: 600; letter-spacing: 2px;
-    color: var(--green); text-transform: uppercase;
-    margin-bottom: 12px;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .return-label::before { content: ''; width: 6px; height: 6px; background: var(--green); border-radius: 50%; display: inline-block; }
-  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
-  .modal-actions .btn { flex: 1; text-align: center; }
-  .modal-actions .btn-del-modal { flex: 0; background: transparent; color: var(--red); border: 1px solid var(--red); }
-  .modal-actions .btn-del-modal:hover { background: var(--red); color: #fff; }
+  .field input:focus, .field select:focus { outline: 2px solid #1a56db; border-color: #1a56db; }
+  .field input.auto { background: #f0f7ff; color: #1a56db; font-weight: bold; }
 
-  /* ── Info bar ── */
-  .info-bar {
-    display: flex; gap: 16px; margin-top: 14px;
-    padding: 11px 14px; background: var(--surface);
-    border: 1px solid var(--border); border-radius: 4px;
-    flex-wrap: wrap; align-items: center;
-  }
-  .info-item { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text-muted); }
-  .info-item strong { color: var(--text); margin-right: 4px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-  /* ── Toast ── */
+  .divider { border-top: 1px solid #ddd; margin: 16px 0 13px; font-size: 12px; color: #666; font-weight: bold; padding-top: 12px; }
+
+  .modal-footer { display: flex; gap: 8px; margin-top: 18px; }
+  .modal-footer button { flex: 1; padding: 9px; font-size: 13px; }
+  .btn-del-sm { flex: 0 !important; color: #c0392b; border-color: #c0392b; }
+  .btn-del-sm:hover { background: #fdecea; }
+
+  /* Toast */
   .toast {
-    position: fixed; bottom: 24px; right: 24px;
-    background: var(--surface2);
-    border: 1px solid var(--accent); border-left: 4px solid var(--accent);
-    border-radius: 4px; padding: 12px 18px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text);
-    z-index: 999; transform: translateX(150%); transition: transform 0.3s ease;
+    position: fixed; bottom: 20px; right: 20px;
+    background: #222; color: #fff;
+    padding: 10px 16px; border-radius: 3px;
+    font-size: 13px; z-index: 999;
+    transform: translateX(200%); transition: transform 0.25s;
   }
   .toast.show { transform: translateX(0); }
 
   @media print {
-    body { background: white; color: black; padding: 0; }
-    .controls, .modal-overlay, .toast, .cell-actions, .info-bar { display: none !important; }
-    .header { border-color: black; }
-    .header-title, .clock-time { color: black; }
-    table { border: 1px solid #999; }
-    th { color: black; border-bottom: 2px solid black; background: #eee !important; }
-    td.cell-data, td.cell-hora { color: black; }
-    .table-wrapper { border: none; }
+    .controls, .overlay, .toast, td.center:last-child, th.center:last-child { display: none !important; }
+    body { background: #fff; padding: 0; }
+    .table-wrap { border: none; }
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div>
-    <div class="header-sub">Controle de Veículos</div>
-    <div class="header-title">Diário de Bordo</div>
-  </div>
-  <div class="live-clock">
-    <div class="clock-time" id="clock">00:00:00</div>
-    <div class="clock-date" id="clockDate">—</div>
-  </div>
-</div>
+<h1>Diário de Bordo</h1>
+<div class="subtitle">Controle de uso de veículos da empresa</div>
+<div class="clock" id="clock"></div>
 
 <div class="controls">
-  <button class="btn btn-primary" onclick="openNew()">+ Nova Saída</button>
-
-  <!-- Export dropdown -->
-  <div class="export-group">
-    <button class="btn btn-excel export-main" onclick="exportXLSX()">↓ Exportar Excel</button>
-    <button class="export-arrow" onclick="toggleExportMenu(event)" title="Mais opções">▾</button>
-    <div class="export-dropdown" id="exportMenu">
-      <button onclick="exportXLSX(); closeExportMenu()">📊 Excel (.xlsx)</button>
-      <button onclick="exportCSV(); closeExportMenu()">📄 CSV (.csv)</button>
-    </div>
-  </div>
-
-  <button class="btn btn-secondary" onclick="window.print()">⎙ Imprimir</button>
-  <button class="btn btn-danger" onclick="clearAll()">✕ Limpar Tudo</button>
-  <div class="counter">Total: <span id="totalCount">0</span> registros</div>
+  <button class="btn-blue" onclick="openNew()">+ Nova Saída</button>
+  <button class="btn-green" onclick="exportXLSX()">↓ Excel</button>
+  <button onclick="exportCSV()">↓ CSV</button>
+  <button onclick="window.print()">Imprimir</button>
+  <button class="btn-red" onclick="clearAll()">Limpar Tudo</button>
+  <span class="counter">Total: <strong id="totalCount">0</strong> registros</span>
 </div>
 
-<div class="table-wrapper">
-  <table id="logTable">
+<div class="table-wrap">
+  <table>
     <thead>
       <tr>
         <th>#</th>
         <th>Data</th>
-        <th>Hora Saída</th>
-        <th>Hora Retorno</th>
+        <th>Saída</th>
+        <th>Retorno</th>
         <th>Motorista</th>
         <th>Placa</th>
         <th>Origem / Destino</th>
         <th>Status</th>
-        <th class="actions-col">Ações</th>
+        <th class="center">Ações</th>
       </tr>
     </thead>
-    <tbody id="logBody"></tbody>
+    <tbody id="tbody"></tbody>
   </table>
 </div>
 
-<div class="info-bar">
-  <div class="info-item"><strong>✏️ Editar</strong> clique no lápis da linha</div>
-  <div class="info-item"><strong>🗑 Excluir</strong> clique no X da linha</div>
-  <div class="info-item"><strong>📊 Excel</strong> exporta .xlsx compatível</div>
-</div>
-
 <!-- Modal -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeIfOutside(event)">
+<div class="overlay" id="overlay" onclick="outsideClick(event)">
   <div class="modal">
-    <div class="modal-title" id="modalTitle">Nova Saída</div>
-    <div class="modal-subtitle" id="modalSubtitle">Data e hora preenchidos automaticamente</div>
+    <h2 id="modalTitle">Nova Saída</h2>
 
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Data <span class="auto-tag">▶ auto</span></label>
-        <input type="text" class="form-input auto-value" id="fData" readonly>
+    <div class="field-row">
+      <div class="field">
+        <label>Data (automático)</label>
+        <input type="text" id="fData" class="auto" readonly>
       </div>
-      <div class="form-group">
-        <label class="form-label">Hora Saída <span class="auto-tag">▶ auto</span></label>
-        <input type="text" class="form-input auto-value" id="fHoraSaida" readonly>
+      <div class="field">
+        <label>Hora Saída (automático)</label>
+        <input type="text" id="fSaida" class="auto" readonly>
       </div>
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Motorista</label>
-      <input type="text" class="form-input" id="fMotorista" placeholder="Nome do motorista" autocomplete="off">
+    <div class="field">
+      <label>Motorista *</label>
+      <input type="text" id="fMotorista" placeholder="Nome do motorista" autocomplete="off">
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Veículo / Placa</label>
-      <select class="form-select" id="fPlaca">
-        <option value="">— Selecione o veículo —</option>
+    <div class="field">
+      <label>Veículo *</label>
+      <select id="fPlaca">
+        <option value="">— Selecione —</option>
         <option value="ONJ1A38">ONJ1A38</option>
         <option value="SGN6F32">SGN6F32</option>
         <option value="SGN6F35">SGN6F35</option>
@@ -447,28 +240,27 @@
       </select>
     </div>
 
-    <div class="form-group" id="placaManualGroup" style="display:none;">
-      <label class="form-label">Placa (manual)</label>
-      <input type="text" class="form-input" id="fPlacaManual" placeholder="Ex: ABC-1234" maxlength="10" style="text-transform:uppercase">
+    <div class="field" id="placaManualWrap" style="display:none">
+      <label>Placa (manual)</label>
+      <input type="text" id="fPlacaManual" placeholder="Ex: ABC-1234" maxlength="10" style="text-transform:uppercase">
     </div>
 
-    <div class="form-group">
-      <label class="form-label">Origem / Destino</label>
-      <input type="text" class="form-input" id="fDestino" placeholder="Ex: Escritório → Cliente X">
+    <div class="field">
+      <label>Origem / Destino</label>
+      <input type="text" id="fDestino" placeholder="Ex: Escritório → Cliente X">
     </div>
 
-    <div class="return-section">
-      <div class="return-label">Registrar Retorno (opcional)</div>
-      <div class="form-group">
-        <label class="form-label">Hora Retorno</label>
-        <input type="text" class="form-input" id="fHoraRetorno" placeholder="HH:MM — deixe em branco se ainda não retornou">
-      </div>
+    <div class="divider">Retorno (preencha quando o veículo voltar)</div>
+
+    <div class="field">
+      <label>Hora Retorno</label>
+      <input type="text" id="fRetorno" placeholder="HH:MM — deixe vazio se ainda não retornou">
     </div>
 
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-del-modal btn-icon" id="btnDeleteModal" onclick="deleteFromModal()" title="Excluir este registro" style="display:none;">🗑</button>
-      <button class="btn btn-primary" onclick="saveEntry()">Salvar</button>
+    <div class="modal-footer">
+      <button onclick="closeModal()">Cancelar</button>
+      <button class="btn-del-sm" id="btnDel" onclick="deleteFromModal()" style="display:none">Excluir</button>
+      <button class="btn-blue" onclick="saveEntry()">Salvar</button>
     </div>
   </div>
 </div>
@@ -478,273 +270,172 @@
 <script>
   const VEICULOS = ['ONJ1A38','SGN6F32','SGN6F35'];
   let entries = JSON.parse(localStorage.getItem('diario_bordo') || '[]');
-  let editingIndex = -1;
+  let editIdx = -1;
 
-  // ── Clock ──
-  function updateClock() {
-    const now = new Date();
+  // Clock
+  function tick() {
+    const d = new Date();
     const pad = n => String(n).padStart(2,'0');
-    document.getElementById('clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
     const days = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
     const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    document.getElementById('clockDate').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    document.getElementById('clock').textContent =
+      `${days[d.getDay()]}, ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}  —  ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   }
-  setInterval(updateClock, 1000);
-  updateClock();
+  setInterval(tick, 1000); tick();
 
-  function nowDate() {
-    const d = new Date();
-    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  }
-  function nowTime() {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-  }
+  const pad = n => String(n).padStart(2,'0');
+  const nowDate = () => { const d=new Date(); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; };
+  const nowTime = () => { const d=new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  // ── Persist & Render ──
-  function save() {
-    localStorage.setItem('diario_bordo', JSON.stringify(entries));
-    render();
-  }
-
-  function esc(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  function save() { localStorage.setItem('diario_bordo', JSON.stringify(entries)); render(); }
 
   function render() {
-    const tbody = document.getElementById('logBody');
     document.getElementById('totalCount').textContent = entries.length;
-    if (entries.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state">
-        <div class="icon">🚗</div>
-        <p>Nenhum registro. Clique em "+ Nova Saída" para começar.</p>
-      </div></td></tr>`;
+    const tb = document.getElementById('tbody');
+    if (!entries.length) {
+      tb.innerHTML = `<tr><td colspan="9" class="empty">Nenhum registro. Clique em "+ Nova Saída" para começar.</td></tr>`;
       return;
     }
-    tbody.innerHTML = entries.map((e, i) => {
-      const hasReturn = e.retorno && e.retorno.trim();
-      const badge = hasReturn
-        ? `<span class="status-badge status-retorno">Retornou</span>`
-        : `<span class="status-badge status-saida">Em viagem</span>`;
+    tb.innerHTML = entries.map((e,i) => {
+      const ret = e.retorno && e.retorno.trim();
+      const tag = ret
+        ? `<span class="tag tag-retorno">Retornou</span>`
+        : `<span class="tag tag-viagem">Em viagem</span>`;
       return `<tr>
-        <td class="cell-num">${i+1}</td>
-        <td class="cell-data">${esc(e.data) || '—'}</td>
-        <td class="cell-hora">${esc(e.saida) || '—'}</td>
-        <td class="cell-retorno" style="color:${hasReturn ? 'var(--green)' : 'var(--text-muted)'}">${esc(e.retorno) || '—'}</td>
-        <td class="cell-motorista">${esc(e.motorista) || '—'}</td>
-        <td class="cell-placa">${esc(e.placa) || '—'}</td>
-        <td class="cell-destino" title="${esc(e.destino)}">${esc(e.destino) || '—'}</td>
-        <td class="cell-status">${badge}</td>
-        <td class="cell-actions">
-          <button class="action-btn edit" onclick="openEdit(${i})" title="Editar">✏️</button>
-          <button class="action-btn del"  onclick="deleteEntry(event,${i})" title="Excluir">✕</button>
+        <td class="muted">${i+1}</td>
+        <td class="bold">${esc(e.data)||'—'}</td>
+        <td class="orange">${esc(e.saida)||'—'}</td>
+        <td class="${ret?'green':'muted'}">${esc(e.retorno)||'—'}</td>
+        <td>${esc(e.motorista)||'—'}</td>
+        <td class="bold">${esc(e.placa)||'—'}</td>
+        <td>${esc(e.destino)||'—'}</td>
+        <td>${tag}</td>
+        <td class="center">
+          <button class="act-btn" onclick="openEdit(${i})" title="Editar">✏️</button>
+          <button class="act-btn" onclick="delEntry(event,${i})" title="Excluir">🗑</button>
         </td>
       </tr>`;
     }).join('');
   }
 
-  // ── Placa select logic ──
+  // Placa
   document.getElementById('fPlaca').addEventListener('change', function() {
-    const manual = document.getElementById('placaManualGroup');
-    if (this.value === 'OUTRO') {
-      manual.style.display = 'block';
-      document.getElementById('fPlacaManual').focus();
-    } else {
-      manual.style.display = 'none';
-      document.getElementById('fPlacaManual').value = '';
-    }
+    const show = this.value === 'OUTRO';
+    document.getElementById('placaManualWrap').style.display = show ? 'block' : 'none';
+    if (show) document.getElementById('fPlacaManual').focus();
+    else document.getElementById('fPlacaManual').value = '';
   });
-
-  function getPlacaValue() {
-    const sel = document.getElementById('fPlaca').value;
-    if (sel === 'OUTRO') return document.getElementById('fPlacaManual').value.trim().toUpperCase();
-    return sel;
+  function getPlaca() {
+    const v = document.getElementById('fPlaca').value;
+    return v === 'OUTRO' ? document.getElementById('fPlacaManual').value.trim().toUpperCase() : v;
   }
-
-  function setPlacaValue(placa) {
+  function setPlaca(p) {
     const sel = document.getElementById('fPlaca');
-    const manual = document.getElementById('placaManualGroup');
-    if (VEICULOS.includes(placa)) {
-      sel.value = placa;
-      manual.style.display = 'none';
-    } else if (placa) {
-      sel.value = 'OUTRO';
-      manual.style.display = 'block';
-      document.getElementById('fPlacaManual').value = placa;
-    } else {
-      sel.value = '';
-      manual.style.display = 'none';
-    }
+    if (VEICULOS.includes(p)) { sel.value = p; document.getElementById('placaManualWrap').style.display='none'; }
+    else if (p) { sel.value='OUTRO'; document.getElementById('placaManualWrap').style.display='block'; document.getElementById('fPlacaManual').value=p; }
+    else { sel.value=''; document.getElementById('placaManualWrap').style.display='none'; }
   }
 
-  // ── Modal ──
+  // Modal
   function openNew() {
-    editingIndex = -1;
+    editIdx = -1;
     document.getElementById('modalTitle').textContent = 'Nova Saída';
-    document.getElementById('modalSubtitle').textContent = 'Data e hora de saída preenchidas automaticamente';
     document.getElementById('fData').value = nowDate();
-    document.getElementById('fHoraSaida').value = nowTime();
+    document.getElementById('fSaida').value = nowTime();
     document.getElementById('fMotorista').value = '';
     document.getElementById('fPlaca').value = '';
     document.getElementById('fPlacaManual').value = '';
-    document.getElementById('placaManualGroup').style.display = 'none';
+    document.getElementById('placaManualWrap').style.display = 'none';
     document.getElementById('fDestino').value = '';
-    document.getElementById('fHoraRetorno').value = '';
-    document.getElementById('btnDeleteModal').style.display = 'none';
-    document.getElementById('modalOverlay').classList.add('open');
-    setTimeout(() => document.getElementById('fMotorista').focus(), 100);
+    document.getElementById('fRetorno').value = '';
+    document.getElementById('btnDel').style.display = 'none';
+    document.getElementById('overlay').classList.add('open');
+    setTimeout(() => document.getElementById('fMotorista').focus(), 80);
   }
-
   function openEdit(i) {
-    editingIndex = i;
+    editIdx = i;
     const e = entries[i];
-    document.getElementById('modalTitle').textContent = 'Editar Registro';
-    document.getElementById('modalSubtitle').textContent = `Registro #${i+1}`;
-    document.getElementById('fData').value = e.data || '';
-    document.getElementById('fHoraSaida').value = e.saida || '';
-    document.getElementById('fMotorista').value = e.motorista || '';
-    setPlacaValue(e.placa || '');
-    document.getElementById('fDestino').value = e.destino || '';
-    document.getElementById('fHoraRetorno').value = e.retorno || '';
-    document.getElementById('btnDeleteModal').style.display = 'inline-block';
-    document.getElementById('modalOverlay').classList.add('open');
-    setTimeout(() => document.getElementById('fMotorista').focus(), 100);
+    document.getElementById('modalTitle').textContent = `Editar Registro #${i+1}`;
+    document.getElementById('fData').value = e.data||'';
+    document.getElementById('fSaida').value = e.saida||'';
+    document.getElementById('fMotorista').value = e.motorista||'';
+    setPlaca(e.placa||'');
+    document.getElementById('fDestino').value = e.destino||'';
+    document.getElementById('fRetorno').value = e.retorno||'';
+    document.getElementById('btnDel').style.display = 'inline-block';
+    document.getElementById('overlay').classList.add('open');
+    setTimeout(() => document.getElementById('fMotorista').focus(), 80);
   }
-
-  function closeModal() {
-    document.getElementById('modalOverlay').classList.remove('open');
-    editingIndex = -1;
-  }
-
-  function closeIfOutside(e) {
-    if (e.target === document.getElementById('modalOverlay')) closeModal();
-  }
+  function closeModal() { document.getElementById('overlay').classList.remove('open'); editIdx=-1; }
+  function outsideClick(e) { if (e.target===document.getElementById('overlay')) closeModal(); }
 
   function saveEntry() {
     const motorista = document.getElementById('fMotorista').value.trim();
-    if (!motorista) { document.getElementById('fMotorista').focus(); toast('⚠ Informe o nome do motorista!'); return; }
-    const placa = getPlacaValue();
-    if (!placa) { document.getElementById('fPlaca').focus(); toast('⚠ Selecione o veículo!'); return; }
-
+    if (!motorista) { toast('Informe o nome do motorista!'); document.getElementById('fMotorista').focus(); return; }
+    const placa = getPlaca();
+    if (!placa) { toast('Selecione o veículo!'); document.getElementById('fPlaca').focus(); return; }
     const entry = {
-      data:      document.getElementById('fData').value,
-      saida:     document.getElementById('fHoraSaida').value,
-      retorno:   document.getElementById('fHoraRetorno').value.trim(),
-      motorista,
-      placa,
-      destino:   document.getElementById('fDestino').value.trim(),
+      data: document.getElementById('fData').value,
+      saida: document.getElementById('fSaida').value,
+      retorno: document.getElementById('fRetorno').value.trim(),
+      motorista, placa,
+      destino: document.getElementById('fDestino').value.trim()
     };
-
-    if (editingIndex === -1) {
-      entries.push(entry);
-      toast('✓ Saída registrada!');
-    } else {
-      entries[editingIndex] = entry;
-      toast('✓ Registro atualizado!');
-    }
-    save();
-    closeModal();
+    if (editIdx === -1) { entries.push(entry); toast('Saída registrada!'); }
+    else { entries[editIdx] = entry; toast('Registro atualizado!'); }
+    save(); closeModal();
   }
 
-  function deleteEntry(ev, i) {
+  function delEntry(ev, i) {
     ev && ev.stopPropagation();
-    if (!confirm(`Excluir o registro #${i+1} de ${entries[i].motorista || '?'}?`)) return;
-    entries.splice(i, 1);
-    save();
-    toast('Registro excluído');
+    if (!confirm(`Excluir registro #${i+1} (${entries[i].motorista||'?'})?`)) return;
+    entries.splice(i,1); save(); toast('Registro excluído.');
   }
-
-  function deleteFromModal() {
-    if (editingIndex < 0) return;
-    closeModal();
-    deleteEntry(null, editingIndex);
-  }
-
+  function deleteFromModal() { if (editIdx<0) return; const i=editIdx; closeModal(); delEntry(null,i); }
   function clearAll() {
-    if (entries.length === 0) return;
-    if (!confirm(`Apagar todos os ${entries.length} registros? Esta ação não pode ser desfeita.`)) return;
-    entries = [];
-    save();
-    toast('Todos os registros foram removidos');
+    if (!entries.length) return;
+    if (!confirm(`Apagar todos os ${entries.length} registros?`)) return;
+    entries=[]; save(); toast('Todos os registros removidos.');
   }
 
-  // ── Export dropdown ──
-  function toggleExportMenu(e) {
-    e.stopPropagation();
-    document.getElementById('exportMenu').classList.toggle('open');
-  }
-  function closeExportMenu() { document.getElementById('exportMenu').classList.remove('open'); }
-  document.addEventListener('click', closeExportMenu);
-
-  // ── Export XLSX (real Excel) ──
+  // Excel
   function exportXLSX() {
-    if (entries.length === 0) { toast('Nenhum dado para exportar'); return; }
+    if (!entries.length) { toast('Nenhum dado para exportar.'); return; }
     const header = ['#','Data','Hora Saída','Hora Retorno','Motorista','Placa','Origem/Destino','Status'];
-    const rows = entries.map((e, i) => [
-      i+1, e.data||'', e.saida||'', e.retorno||'',
-      e.motorista||'', e.placa||'', e.destino||'',
-      (e.retorno && e.retorno.trim()) ? 'Retornou' : 'Em viagem'
-    ]);
-
+    const rows = entries.map((e,i)=>[i+1,e.data||'',e.saida||'',e.retorno||'',e.motorista||'',e.placa||'',e.destino||'',(e.retorno&&e.retorno.trim())?'Retornou':'Em viagem']);
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-
-    // Column widths
-    ws['!cols'] = [
-      {wch:5},{wch:12},{wch:12},{wch:14},{wch:22},{wch:12},{wch:30},{wch:12}
-    ];
-
-    // Style header row (background color via s property — basic)
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let C = range.s.c; C <= range.e.c; C++) {
-      const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
-      if (cell) {
-        cell.s = {
-          font: { bold: true, color: { rgb: 'FFFFFFFF' } },
-          fill: { fgColor: { rgb: 'FF1D4E89' } },
-          alignment: { horizontal: 'center' }
-        };
-      }
-    }
-
+    const ws = XLSX.utils.aoa_to_sheet([header,...rows]);
+    ws['!cols']=[{wch:4},{wch:12},{wch:11},{wch:13},{wch:22},{wch:11},{wch:30},{wch:12}];
     XLSX.utils.book_append_sheet(wb, ws, 'Diário de Bordo');
     XLSX.writeFile(wb, `diario_bordo_${nowDate().replace(/\//g,'-')}.xlsx`);
-    toast('✓ Excel exportado!');
+    toast('Excel exportado!');
   }
 
-  // ── Export CSV (fallback) ──
+  // CSV
   function exportCSV() {
-    if (entries.length === 0) { toast('Nenhum dado para exportar'); return; }
+    if (!entries.length) { toast('Nenhum dado para exportar.'); return; }
     const header = ['#','Data','Hora Saída','Hora Retorno','Motorista','Placa','Origem/Destino','Status'];
-    const rows = entries.map((e, i) => [
-      i+1, e.data||'', e.saida||'', e.retorno||'',
-      e.motorista||'', e.placa||'', e.destino||'',
-      (e.retorno && e.retorno.trim()) ? 'Retornou' : 'Em viagem'
-    ]);
-    const csv = [header,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
-    const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `diario_bordo_${nowDate().replace(/\//g,'-')}.csv`;
+    const rows = entries.map((e,i)=>[i+1,e.data||'',e.saida||'',e.retorno||'',e.motorista||'',e.placa||'',e.destino||'',(e.retorno&&e.retorno.trim())?'Retornou':'Em viagem']);
+    const csv=[header,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
+    a.download=`diario_bordo_${nowDate().replace(/\//g,'-')}.csv`;
     a.click();
-    toast('✓ CSV exportado!');
+    toast('CSV exportado!');
   }
 
-  // ── Toast ──
+  // Toast
   function toast(msg) {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), 2800);
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.classList.add('show');
+    clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2500);
   }
 
-  // ── Keyboard ──
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeModal();
-    if (e.key === 'Enter' && document.getElementById('modalOverlay').classList.contains('open')) {
-      if (!['BUTTON','SELECT'].includes(e.target.tagName)) saveEntry();
-    }
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape') closeModal();
+    if(e.key==='Enter' && document.getElementById('overlay').classList.contains('open'))
+      if(!['BUTTON','SELECT'].includes(e.target.tagName)) saveEntry();
   });
 
   render();
